@@ -51,6 +51,10 @@
 //
 // the globals
 //
+
+uint32_t RFT; //rising to falling edge period addj
+volatile uint32_t In_Pwm; //It´s the input High Pulse Period from input pwm signal
+
 HAL_ADCData_t adcData = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0.0};
 
 HAL_PWMData_t pwmData = {{0.0, 0.0, 0.0}};
@@ -734,6 +738,8 @@ void main(void)
 
 __interrupt void mainISR(void)
 {
+
+
     //
     // check ISR executing time by toggling the GPIO
     //
@@ -1085,6 +1091,41 @@ void runOffsetsCalculation(void)
 
     return;
 } // end of runOffsetsCalculation() function
+
+__interrupt void ecap1ISR(void)
+{
+
+    //
+    // In_Pwm  it is the High Pulse Period on number of Ints The clocl its at 100Mhz
+    // In_Pwm/100Mhz=period on ms
+    // 100000 Interrups are going to be 1000us
+    //
+    In_Pwm = ECAP_getEventTimeStamp(halHandle->ecapHandle, ECAP_EVENT_3);
+
+    RFT = In_Pwm;
+
+
+
+
+    //
+    // Clear interrupt flags for more interrupts.
+    //
+    ECAP_clearInterrupt(halHandle->ecapHandle,ECAP_ISR_SOURCE_CAPTURE_EVENT_4);
+    ECAP_clearGlobalInterrupt(halHandle->ecapHandle);
+
+    //
+    // Start eCAP
+    //
+    ECAP_reArm(halHandle->ecapHandle);
+
+    //
+    // Acknowledge the group interrupt for more interrupts.
+    //
+    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP4);
+
+    return;
+}
+
 
 //
 // end of file
