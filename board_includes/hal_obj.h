@@ -88,6 +88,8 @@ typedef struct _HAL_Obj_
 
   uint32_t      pwmHandle[3];       //<! the PWM handles
 
+  uint32_t      ecapHandle;         //<! the eCap Handle addJ
+
   uint32_t      timerHandle[3];     //<! the timer handles
 
   uint32_t      sciHandle[2];       //!< the SCI handle

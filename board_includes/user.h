@@ -70,7 +70,7 @@ extern "C" {
 
 //! \brief Defines the nominal DC bus voltage, V
 //!
-#define USER_NOMINAL_DC_BUS_VOLTAGE_V         ((float32_t)(48.0))
+#define USER_NOMINAL_DC_BUS_VOLTAGE_V         ((float32_t)(18.0))
 
 
 //! \brief Defines the maximum voltage at the AD converter
@@ -110,7 +110,7 @@ extern "C" {
 
 //! \brief Defines the number of pwm clock ticks per isr clock tick
 //!        Note: Valid values are from 1 to 15
-#define USER_NUM_PWM_TICKS_PER_ISR_TICK        (1)
+#define USER_NUM_PWM_TICKS_PER_ISR_TICK        (3)
 
 //! \brief Defines the number of ISR clock ticks per current controller clock tick
 //!
@@ -145,7 +145,7 @@ extern "C" {
 //#define USER_PWM_FREQ_kHz          ((float32_t)(10.0))     //10KHz PWM frequency
 //#define USER_PWM_FREQ_kHz          ((float32_t)(12.0))     //12KHz PWM frequency
 //#define USER_PWM_FREQ_kHz          ((float32_t)(15.0))     //15KHz PWM frequency
-#define USER_PWM_FREQ_kHz          ((float32_t)(20.0))       //20KHz PWM frequency
+#define USER_PWM_FREQ_kHz          ((float32_t)(45.0))       //20KHz PWM frequency
 
 //! \brief Defines the Pulse Width Modulation (PWM) period, usec
 //!
@@ -392,11 +392,15 @@ extern "C" {
 
 #define my_motor_1                  301
 
+//Quaternium Motors
+#define tmotor3110                  103
+
+#define USER_MOTOR tmotor3110
 
 //#define USER_MOTOR Estun_EMJ_04APB22_A
 //#define USER_MOTOR Estun_EMJ_04APB22_B
 
-#define USER_MOTOR Teknic_M2310PLN04K
+//#define USER_MOTOR Teknic_M2310PLN04K
 //#define USER_MOTOR Anaheim_BLY172S_24V
 //#define USER_MOTOR Anaheim_BLY341S_48V
 //#define USER_MOTOR Anaheim_BLY341S_24V
@@ -784,6 +788,37 @@ extern "C" {
 #define USER_MOTOR_FREQ_HIGH_HZ           (400.0)         // Hz
 #define USER_MOTOR_VOLT_MIN_V             (4.0)           // Volt
 #define USER_MOTOR_VOLT_MAX_V             (24.0)          // Volt
+
+#elif (USER_MOTOR == tmotor3110)
+#define USER_MOTOR_TYPE                   MOTOR_TYPE_PM
+#define USER_MOTOR_NUM_POLE_PAIRS         (7)
+#define USER_MOTOR_Rr_Ohm                 (NULL)
+#define USER_MOTOR_Rs_Ohm                 (NULL)
+#define USER_MOTOR_Ls_d_H                 (NULL)
+#define USER_MOTOR_Ls_q_H                 (NULL)
+#define USER_MOTOR_RATED_FLUX_VpHz        (NULL)
+#define USER_MOTOR_MAGNETIZING_CURRENT_A  (NULL)
+#define USER_MOTOR_RES_EST_CURRENT_A      (2.0)
+#define USER_MOTOR_IND_EST_CURRENT_A      (-1.5)
+#define USER_MOTOR_MAX_CURRENT_A          (6.0)
+#define USER_MOTOR_FLUX_EXC_FREQ_Hz       (40.0)
+#define USER_MOTOR_NUM_ENC_SLOTS          (1000)
+#define USER_MOTOR_INERTIA_Kgm2           (7.06154e-06)
+
+#define USER_MOTOR_RATED_VOLTAGE_V        (24.0)
+#define USER_MOTOR_RATED_SPEED_KRPM       (3.0)
+
+#define USER_MOTOR_FREQ_MIN_HZ            (5.0)           // Hz
+#define USER_MOTOR_FREQ_MAX_HZ            (600.0)         // Hz
+
+#define USER_MOTOR_FREQ_LOW_HZ            (20.0)          // Hz
+#define USER_MOTOR_FREQ_HIGH_HZ           (400.0)         // Hz
+#define USER_MOTOR_VOLT_MIN_V             (4.0)           // Volt
+#define USER_MOTOR_VOLT_MAX_V             (24.0)          // Volt
+
+
+
+
 
 #else
 #error No motor type specified

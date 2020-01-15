@@ -231,6 +231,7 @@ typedef enum
 
 extern __interrupt void mainISR(void);
 extern __interrupt void estISR(void);
+extern __interrupt void ecap1ISR(void); //addj
 
 // CLA Tasks
 extern __interrupt void task_initModules(void);
@@ -372,6 +373,12 @@ extern void HAL_enableDebugInt(HAL_Handle handle);
 //! \details    Provides the correct timing to enable the drv8320
 //! \param[in]  handle  The hardware abstraction layer (HAL) handle
 extern void HAL_enableDRV(HAL_Handle handle);
+
+//
+// initECAP - Configure eCAP
+//
+extern void HalinitECAP(HAL_Handle handle); //addj
+
 
 
 //! \brief     Enables global interrupts
@@ -537,8 +544,11 @@ extern HAL_Handle HAL_init(void *pMemory, const size_t numBytes);
 static inline void HAL_initIntVectorTable(HAL_Handle handle)
  {
 
+    Interrupt_register(INT_ECAP1, &ecap1ISR);//addj
+
 #if (BOOST_to_LPD == BOOSTX_to_J1_J2)
     Interrupt_register(INT_ADCB1, &mainISR);
+
 #endif
 
 #if (BOOST_to_LPD == BOOSTX_to_J5_J6)
@@ -1181,7 +1191,6 @@ void HAL_writeDRVData(HAL_Handle handle, DRV8320_SPIVars_t *drv8320SPIVars);
 //! \param[in] drv8320SPIVars  SPI variables
 void HAL_readDRVData(HAL_Handle handle, DRV8320_SPIVars_t *drv8320SPIVars);
 
-
 //! \brief     Sets up the SPI interface for the driver
 //! \param[in] handle         The hardware abstraction layer (HAL) handle
 //! \param[in] drv8320SPIVars  SPI variables
@@ -1333,6 +1342,10 @@ static inline void HAL_setTrigger(HAL_Handle handle, HAL_PWMData_t *pPWMData,
                               pwmSOCCMP);
   return;
 } // end of HAL_setTrigger() function
+
+
+
+
 
 #ifdef __cplusplus
 }

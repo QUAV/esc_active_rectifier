@@ -96,9 +96,12 @@ void HAL_enableADCInts(HAL_Handle handle)
 {
     HAL_Obj *obj = (HAL_Obj *)handle;
 
+    Interrupt_enable(INT_ECAP1);   // enable IntEcap1 addj
+
 #if (BOOST_to_LPD == BOOSTX_to_J1_J2)
     // enable the PIE interrupts associated with the ADC interrupts
     Interrupt_enable(INT_ADCB1);        //RB2
+
 
     // enable the ADC interrupts
     ADC_enableInterrupt(obj->adcHandle[1], ADC_INT_NUMBER1);
@@ -209,6 +212,9 @@ HAL_Handle HAL_init(void *pMemory,const size_t numBytes)
     obj->adcResult[0] = ADCARESULT_BASE;
     obj->adcResult[1] = ADCBRESULT_BASE;
     obj->adcResult[2] = ADCCRESULT_BASE;
+
+    // initialize the eCap
+    obj->ecapHandle = ECAP1_BASE; //addJ
 
     // initialize CLA handle
     obj->claHandle = CLA1_BASE;
@@ -372,6 +378,8 @@ void HAL_setParams(HAL_Handle handle)
 
     // setup the ADCs
     HAL_setupADCs(handle);
+
+    HalinitECAP(handle); //addj
 
     // setup the PGAs
     HAL_setupPGAs(handle);
@@ -947,6 +955,9 @@ void HAL_setupGate(HAL_Handle handle)
 } // HAL_setupGate() function
 
 
+//
+
+
 void HAL_setupGPIOs(HAL_Handle handle)
 {
     // EPWM1A->UH for J5/J6 Connection
@@ -1298,14 +1309,91 @@ void HAL_setupGPIOs(HAL_Handle handle)
     GPIO_setDirectionMode(58, GPIO_DIR_MODE_IN);
     GPIO_setPadConfig(58, GPIO_PIN_TYPE_STD);
 
-    // GPIO59->Reserve (N/A)
-    GPIO_setMasterCore(59, GPIO_CORE_CPU1);
-    GPIO_setPinConfig(GPIO_59_GPIO59);
-    GPIO_setDirectionMode(59, GPIO_DIR_MODE_IN);
-    GPIO_setPadConfig(59, GPIO_PIN_TYPE_STD);
+    //
+      // Configure GPIO 59 as eCAP input    addj
+
+      XBAR_setInputPin(XBAR_INPUT7,59);
+      GPIO_setPinConfig(GPIO_59_GPIO59);
+      GPIO_setDirectionMode(59, GPIO_DIR_MODE_IN);
+      GPIO_setQualificationMode(59,GPIO_QUAL_ASYNC);
 
     return;
 }  // end of HAL_setupGPIOs() function
+
+// initECAP - Configure eCAP
+//
+void HalinitECAP(HAL_Handle handle) //addj
+{
+    HAL_Obj *obj = (HAL_Obj *)handle;
+
+    //
+    // Disable ,clear all capture flags and interrupts
+    //
+     ECAP_disableInterrupt(obj->ecapHandle,
+                          (ECAP_ISR_SOURCE_CAPTURE_EVENT_1  |
+                           ECAP_ISR_SOURCE_CAPTURE_EVENT_2  |
+                           ECAP_ISR_SOURCE_CAPTURE_EVENT_3  |
+                           ECAP_ISR_SOURCE_CAPTURE_EVENT_4  |
+                           ECAP_ISR_SOURCE_COUNTER_OVERFLOW |
+                           ECAP_ISR_SOURCE_COUNTER_PERIOD   |
+                           ECAP_ISR_SOURCE_COUNTER_COMPARE));
+    ECAP_clearInterrupt(obj->ecapHandle,
+                        (ECAP_ISR_SOURCE_CAPTURE_EVENT_1  |
+                         ECAP_ISR_SOURCE_CAPTURE_EVENT_2  |
+                         ECAP_ISR_SOURCE_CAPTURE_EVENT_3  |
+                         ECAP_ISR_SOURCE_CAPTURE_EVENT_4  |
+                         ECAP_ISR_SOURCE_COUNTER_OVERFLOW |
+                         ECAP_ISR_SOURCE_COUNTER_PERIOD   |
+                         ECAP_ISR_SOURCE_COUNTER_COMPARE));
+
+    //
+    // Disable CAP1-CAP4 register loads
+    //
+    ECAP_disableTimeStampCapture(obj->ecapHandle);
+
+    //
+    // Configure eCAP
+    //    Enable capture mode.
+    //    One shot mode, stop capture at event 4.
+    //    Set polarity of the events to rising, falling, rising, falling edge.
+    //    Set capture in time difference mode.
+    //    Select input from XBAR7.
+    //    Enable eCAP module.
+    //    Enable interrupt.
+    //
+    ECAP_stopCounter(obj->ecapHandle);
+    ECAP_enableCaptureMode(obj->ecapHandle);
+
+    ECAP_setCaptureMode(obj->ecapHandle, ECAP_ONE_SHOT_CAPTURE_MODE, ECAP_EVENT_4);
+
+    ECAP_setEventPolarity(obj->ecapHandle, ECAP_EVENT_1, ECAP_EVNT_FALLING_EDGE);
+    ECAP_setEventPolarity(obj->ecapHandle, ECAP_EVENT_2, ECAP_EVNT_RISING_EDGE);
+    ECAP_setEventPolarity(obj->ecapHandle, ECAP_EVENT_3, ECAP_EVNT_FALLING_EDGE);
+    ECAP_setEventPolarity(obj->ecapHandle, ECAP_EVENT_4, ECAP_EVNT_RISING_EDGE);
+
+    ECAP_enableCounterResetOnEvent(obj->ecapHandle, ECAP_EVENT_1);
+    ECAP_enableCounterResetOnEvent(obj->ecapHandle, ECAP_EVENT_2);
+    ECAP_enableCounterResetOnEvent(obj->ecapHandle, ECAP_EVENT_3);
+    ECAP_enableCounterResetOnEvent(obj->ecapHandle, ECAP_EVENT_4);
+
+    ECAP_selectECAPInput(obj->ecapHandle, ECAP_INPUT_INPUTXBAR7);
+
+    ECAP_enableLoadCounter(obj->ecapHandle);
+    ECAP_setSyncOutMode(obj->ecapHandle, ECAP_SYNC_OUT_SYNCI);
+    ECAP_startCounter(obj->ecapHandle);
+    ECAP_enableTimeStampCapture(obj->ecapHandle);
+    ECAP_reArm(obj->ecapHandle);
+
+    ECAP_enableInterrupt(obj->ecapHandle, ECAP_ISR_SOURCE_CAPTURE_EVENT_4);
+
+    return;
+}
+
+//End Ecap init
+
+
+
+
 
 #ifdef CLA
 void HAL_setupCLA(HAL_Handle handle)
@@ -1398,7 +1486,7 @@ void HAL_setupPeripheralClks(HAL_Handle handle)
     SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_EPWM7);
     SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_EPWM8);
 
-    SysCtl_disablePeripheral(SYSCTL_PERIPH_CLK_ECAP1);
+    SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_ECAP1);
     SysCtl_disablePeripheral(SYSCTL_PERIPH_CLK_ECAP2);
     SysCtl_disablePeripheral(SYSCTL_PERIPH_CLK_ECAP3);
     SysCtl_disablePeripheral(SYSCTL_PERIPH_CLK_ECAP4);
