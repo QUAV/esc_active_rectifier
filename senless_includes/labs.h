@@ -501,7 +501,7 @@ extern MATH_Vec2 Vdq_out_V;
 //! \brief The main interrupt service (ISR) routine
 //
 extern __interrupt void mainISR(void);
-extern __interrupt void ecap1ISR(void);//addj
+
 //
 //! \brief runs offset calculation using filters
 //
