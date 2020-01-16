@@ -53,7 +53,13 @@
 //
 
 uint32_t RFT; //rising to falling edge period addj
-volatile uint32_t In_Pwm; //It´s the input High Pulse Period from input pwm signal
+float32_t InputSpd;
+#define Motor_kv 700
+float32_t dutycycle = 0; //dutycycle from 0 to 1
+volatile float32_t In_Pwm; //It´s the input High Pulse Period from input pwm signal
+                           //Depends from the Ecap1 Interrupts
+
+
 
 HAL_ADCData_t adcData = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0.0};
 
@@ -1095,14 +1101,23 @@ void runOffsetsCalculation(void)
 __interrupt void ecap1ISR(void)
 {
 
-    //
+
     // In_Pwm  it is the High Pulse Period on number of Ints The clocl its at 100Mhz
     // In_Pwm/100Mhz=period on ms
     // 100000 Interrups are going to be 1000us
-    //
+
     In_Pwm = ECAP_getEventTimeStamp(halHandle->ecapHandle, ECAP_EVENT_3);
 
+    //Compute the Dutycyle from 1000us(0%) to 2000us(100%)
+    dutycycle =(In_Pwm-97700)/97700;
     RFT = In_Pwm;
+
+    //Compute the Speed(Hz) respect the dutycycle and the Vdc Bus
+    InputSpd= ((userParams.motor_numPolePairs*(Motor_kv*adcData.dcBus_V))/60)*dutycycle;
+
+    //Change the Speed in Hz
+    motorVars.speedRef_Hz=InputSpd;
+
 
 
 
