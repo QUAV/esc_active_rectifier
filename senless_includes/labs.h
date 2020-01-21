@@ -293,6 +293,9 @@ typedef enum
     0.5,  /* Kp_Iq */                                                          \
     0.01, /* Ki_Iq */                                                          \
                                                                                \
+    6.0,  /* nMaxCurrent */                                                    \
+    6.0,  /* pMaxCurrent */                                                    \
+                                                                               \
     USER_FWC_KP, /* Kp_fwc */                                                  \
     USER_FWC_KI, /* Ki_fwc */                                                  \
     USER_FWC_MAX_ANGLE_RAD, /* angleMax_fwc_rad */                             \
@@ -417,6 +420,9 @@ typedef struct _MOTOR_Vars_t_
 
     float32_t Kp_Iq;
     float32_t Ki_Iq;
+
+    float32_t nMaxCurrent;
+    float32_t pMaxCurrent;
 
     float32_t Kp_fwc;
     float32_t Ki_fwc;
@@ -837,8 +843,8 @@ static inline void setupControllers(void)
     PI_setFbackValue(piHandle_spd, 0.0);
     PI_setFfwdValue(piHandle_spd, 0.0);
     PI_setMinMax(piHandle_spd,
-                 (-userParams.maxCurrent_A),
-                 userParams.maxCurrent_A);
+                 (-motorVars.nMaxCurrent),
+                 motorVars.pMaxCurrent);
 
     //
     // set the Id, Iq and speed controller parameters to motorVars

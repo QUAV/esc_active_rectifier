@@ -54,12 +54,15 @@
 
 uint32_t RFT; //rising to falling edge period addj
 float32_t InputSpd;
-#define Motor_kv 700
+#define Motor_kv 30
 float32_t dutycycle = 0; //dutycycle from 0 to 1
 volatile float32_t In_Pwm; //It´s the input High Pulse Period from input pwm signal
                            //Depends from the Ecap1 Interrupts
+//Current controller
+float32_t kp_current = 0.2;
+float32_t ki_current = 0.05;
 
-
+bool SetupCtrlFlag = false;
 
 HAL_ADCData_t adcData = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0.0};
 
@@ -286,7 +289,7 @@ void main(void)
     TRAJ_setTargetValue(trajHandle_spd, 0.0);
     TRAJ_setIntValue(trajHandle_spd, 0.0);
     TRAJ_setMinValue(trajHandle_spd, -USER_MOTOR_FREQ_MAX_HZ);
-    TRAJ_setMaxValue(trajHandle_spd, USER_MOTOR_FREQ_MAX_HZ);
+    TRAJ_setMaxValue(trajHandle_spd, 20.0); //addj
     TRAJ_setMaxDelta(trajHandle_spd, (USER_MAX_ACCEL_Hzps / USER_ISR_FREQ_Hz));
 
     //
@@ -492,6 +495,11 @@ void main(void)
     //
     while(motorVars.flagEnableSys == true)
     {
+        //Current controller gains
+                    motorVars.Kp_Iq= kp_current;
+                    motorVars.Ki_Iq=ki_current;
+                    motorVars.Kp_Id=kp_current;
+                    motorVars.Ki_Id=ki_current;
         //
         // 1ms time base
         //
@@ -1108,16 +1116,55 @@ __interrupt void ecap1ISR(void)
 
     In_Pwm = ECAP_getEventTimeStamp(halHandle->ecapHandle, ECAP_EVENT_3);
 
-    //Compute the Dutycyle from 1000us(0%) to 2000us(100%)
+    //Compute the Input Dutycyle from 1000us(0%) to 2000us(100%)
     dutycycle =(In_Pwm-97700)/97700;
-    RFT = In_Pwm;
+
 
     //Compute the Speed(Hz) respect the dutycycle and the Vdc Bus
     InputSpd= ((userParams.motor_numPolePairs*(Motor_kv*adcData.dcBus_V))/60)*dutycycle;
 
-    //Change the Speed in Hz
-    motorVars.speedRef_Hz=InputSpd;
 
+
+    if(In_Pwm<150000)
+    {
+        //Change the Speed in Hz
+        motorVars.speedRef_Hz=5;
+
+        if(SetupCtrlFlag==false)
+        {
+            motorVars.nMaxCurrent=0.0;
+            motorVars.pMaxCurrent=6.0;
+            setupControllers();
+            SetupCtrlFlag=true;
+        }
+    }
+
+    if(In_Pwm>155000)
+    {
+
+        if(motorVars.speed_Hz>40)
+        {
+
+            if(SetupCtrlFlag==false)
+               {
+                   motorVars.nMaxCurrent=10.0;
+                   motorVars.pMaxCurrent=0.0;
+                   setupControllers();
+                   SetupCtrlFlag=true;
+               }
+        }
+        else
+        {
+            if(SetupCtrlFlag==true)
+            {
+               motorVars.nMaxCurrent=0.0;
+               motorVars.pMaxCurrent=0.0;
+               setupControllers();
+               SetupCtrlFlag=false;
+            }
+        }
+
+    }
 
 
 
