@@ -225,6 +225,17 @@ void USER_setParams(USER_Params *pUserParams)
                                        pUserParams->motor_numPolePairs *
                                        pUserParams->motor_ratedFlux_Wb /
                                     (float32_t) (2.0 * USER_MOTOR_INERTIA_Kgm2);
+#elif (USER_MOTOR == Hw8120)
+        // tmotor3110
+        pUserParams->BWc_rps = MATH_TWO_PI * (float32_t)100.0;
+        pUserParams->BWdelta = (float32_t)8.0;
+
+        // 3.0 * numPolesPairs * rotorFlux_Wb / (2.0 * J_kg_m2);
+        pUserParams->Kctrl_Wb_p_kgm2 = (float32_t)3.0 *
+                                       pUserParams->motor_numPolePairs *
+                                       pUserParams->motor_ratedFlux_Wb /
+                                    (float32_t) (2.0 * USER_MOTOR_INERTIA_Kgm2);
+
 
 #else
 #error No motor type specified
